@@ -1,0 +1,15 @@
+# Python 3.11 — pinned for reproducible installs
+# Extract / staging
+orjson==3.10.15
+pyarrow==18.1.0
+pandas==2.2.3
+
+# Warehouse
+duckdb==1.2.2
+dbt-duckdb==1.9.4
+
+# Dashboard
+streamlit==1.41.1
+
+# Tests
+pytest==8.3.4

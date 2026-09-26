@@ -1,0 +1,8 @@
+# Local-only profile; path will point at warehouse/fhir.duckdb.
+fhir_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../warehouse/fhir.duckdb
+      threads: 4

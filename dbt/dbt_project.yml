@@ -1,0 +1,16 @@
+# Placeholder dbt project config.
+name: fhir_pipeline
+version: "1.0.0"
+config-version: 2
+
+profile: fhir_pipeline
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+models:
+  fhir_pipeline:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
