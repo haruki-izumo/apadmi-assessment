@@ -22,8 +22,7 @@ docs:
 	cd dbt && $(DBT) docs generate --profiles-dir .
 
 app:
-	@echo "TODO: launch Streamlit dashboard"
-	# $(STREAMLIT) run app/streamlit_app.py
+	$(STREAMLIT) run app/streamlit_app.py
 
 all: download extract transform test
 	@echo "Pipeline complete (stubs)."

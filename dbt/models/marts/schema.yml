@@ -338,3 +338,36 @@ models:
         description: Unit for value_numeric on this row. Also part of the observation code key when present.
       - name: age_at_observation
         description: Completed whole years from birth_date to the effective date. Null when either date is missing.
+
+  - name: rpt_bmi_by_gender_age
+    description: >
+      Grain: one row per gender and age bracket. BMI readings are LOINC 39156-5
+      (kg/m2). Each patient's readings are averaged inside the bracket first, then
+      those patient means are averaged so frequent readers are not overweighted.
+      Paediatric BMI is normally assessed by percentile, so the 0-17 bracket is
+      indicative only.
+    columns:
+      - name: gender
+        description: Patient administrative gender.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['male', 'female', 'other', 'unknown']
+      - name: age_bracket
+        description: Age at the observation, in bands 0-17, 18-34, 35-49, 50-64, and 65+.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['0-17', '18-34', '35-49', '50-64', '65+']
+      - name: avg_bmi
+        description: Mean of the per-patient average BMI in this gender and bracket, rounded to 1 decimal.
+        tests:
+          - not_null
+      - name: patient_count
+        description: Number of patients who contributed at least one BMI reading in this bracket.
+        tests:
+          - not_null
+      - name: reading_count
+        description: Number of BMI readings included in this bracket.
+        tests:
+          - not_null

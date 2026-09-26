@@ -1,14 +1,11 @@
 -- BMI by gender and age bracket.
 --
 -- Paediatric BMI is normally assessed by percentile, so the 0-17 bracket is
--- indicative only. This query uses the BMI ratio (LOINC 39156-5, kg/m2), not
+-- indicative only. This model uses the BMI ratio (LOINC 39156-5, kg/m2), not
 -- the BMI-for-age percentile.
 --
 -- Each patient's readings are averaged inside a bracket first. Those patient
 -- means are then averaged, so a patient with many readings is not overweighted.
---
--- Run against the warehouse:
---   duckdb warehouse/fhir.duckdb < sql/bmi_by_gender_age.sql
 
 with readings as (
     select
@@ -22,10 +19,10 @@ with readings as (
             when f.age_at_observation between 50 and 64 then '50-64'
             when f.age_at_observation >= 65 then '65+'
         end as age_bracket
-    from fact_observation as f
-    inner join dim_observation_code as c
+    from {{ ref('fact_observation') }} as f
+    inner join {{ ref('dim_observation_code') }} as c
         on f.observation_code_key = c.observation_code_key
-    inner join dim_patient as p
+    inner join {{ ref('dim_patient') }} as p
         on f.patient_key = p.patient_key
     where c.loinc_code = '39156-5'
         and f.value_numeric is not null
@@ -62,4 +59,3 @@ order by
         when '65+' then 5
     end,
     gender
-;
