@@ -1,4 +1,3 @@
-# Placeholder dbt project config.
 name: fhir_pipeline
 version: "1.0.0"
 config-version: 2
@@ -6,7 +5,12 @@ config-version: 2
 profile: fhir_pipeline
 
 model-paths: ["models"]
+macro-paths: ["macros"]
 test-paths: ["tests"]
+clean-targets:
+  - target
+  - dbt_packages
+  - logs
 
 models:
   fhir_pipeline:

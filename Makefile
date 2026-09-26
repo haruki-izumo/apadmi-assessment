@@ -12,17 +12,14 @@ extract:
 	$(PYTHON) -m src.extract.run_extract
 
 transform:
-	@echo "TODO: run dbt models into warehouse/fhir.duckdb"
-	# cd dbt && $(DBT) run --profiles-dir .
+	cd dbt && $(DBT) run --profiles-dir .
 
 test:
 	$(PYTHON) -m pytest tests -q
-	@echo "TODO: run dbt tests"
-	# cd dbt && $(DBT) test --profiles-dir .
+	cd dbt && $(DBT) test --profiles-dir .
 
 docs:
-	@echo "TODO: generate dbt docs"
-	# cd dbt && $(DBT) docs generate --profiles-dir .
+	cd dbt && $(DBT) docs generate --profiles-dir .
 
 app:
 	@echo "TODO: launch Streamlit dashboard"

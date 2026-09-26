@@ -1,4 +1,7 @@
-# Local-only profile; path will point at warehouse/fhir.duckdb.
+# Checked in so a fresh clone can run dbt without a home-directory profile.
+# From the dbt/ directory:
+#   dbt run --profiles-dir .
+# The database path is relative to this directory.
 fhir_pipeline:
   target: dev
   outputs:

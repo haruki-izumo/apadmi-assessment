@@ -1,0 +1,340 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: >
+      Calendar dimension. One row per UTC day from the earliest to the latest clinical
+      event date (encounter start/end, condition onset/abatement, observation effective
+      time), plus an unknown member so fact date keys are never null. Event timestamps
+      are converted to dates in UTC so the spine does not depend on the machine time zone.
+    columns:
+      - name: date_key
+        description: Integer date key in YYYYMMDD form. The unknown member uses -1.
+        tests:
+          - unique
+          - not_null
+      - name: date
+        description: UTC calendar date. Null on the unknown member.
+      - name: year
+        description: Four-digit calendar year. Null on the unknown member.
+      - name: quarter
+        description: Calendar quarter, 1 through 4. Null on the unknown member.
+      - name: month
+        description: Calendar month number, 1 through 12. Null on the unknown member.
+      - name: month_name
+        description: English month name. The unknown member is 'unknown'.
+      - name: day_of_week
+        description: English weekday name. The unknown member is 'unknown'.
+      - name: is_weekend
+        description: True for Saturday and Sunday. Null on the unknown member.
+
+  - name: dim_patient
+    description: >
+      Patient dimension. One row per patient, plus an unknown member (patient_key '-1').
+      Age is not stored here; each fact calculates age at its own event date.
+    columns:
+      - name: patient_key
+        description: MD5 surrogate of patient_id. The unknown member is '-1'.
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: FHIR Patient id. Null on the unknown member.
+      - name: gender
+        description: Administrative gender. Null source values and the unknown member are 'unknown'.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['male', 'female', 'other', 'unknown']
+      - name: birth_date
+        description: Date of birth. Null on the unknown member.
+      - name: is_deceased
+        description: True when a death timestamp is present. Null on the unknown member.
+      - name: deceased_date
+        description: Calendar date of death. Null when the patient is alive or unknown.
+      - name: city
+        description: City from the patient address. The unknown member is 'unknown'.
+      - name: state
+        description: State from the patient address. The unknown member is 'unknown'.
+      - name: marital_status
+        description: Marital status display. The unknown member is 'unknown'.
+      - name: race
+        description: US Core race, OMB category display. The unknown member is 'unknown'.
+      - name: ethnicity
+        description: US Core ethnicity, OMB category display. The unknown member is 'unknown'.
+
+  - name: dim_condition_code
+    description: >
+      Distinct condition codes. One row per code system, code, and display, plus an
+      unknown member (condition_code_key '-1').
+    columns:
+      - name: condition_code_key
+        description: MD5 surrogate of code system, code, and display. The unknown member is '-1'.
+        tests:
+          - unique
+          - not_null
+      - name: code_system
+        description: Code system URI. Null on the unknown member.
+      - name: code
+        description: Condition code. Null on the unknown member.
+      - name: display
+        description: Condition display text. The unknown member is 'unknown'.
+
+  - name: dim_encounter_type
+    description: >
+      Distinct encounter classifications. One row per class code, type code, and type
+      display, plus an unknown member (encounter_type_key '-1').
+    columns:
+      - name: encounter_type_key
+        description: MD5 surrogate of class code, type code, and type display. The unknown member is '-1'.
+        tests:
+          - unique
+          - not_null
+      - name: class_code
+        description: >
+          Act encounter class. AMB is ambulatory, EMER is emergency, HH is home health,
+          IMP is inpatient, and VR is virtual. Null on the unknown member.
+        tests:
+          - accepted_values:
+              values: ['AMB', 'EMER', 'HH', 'IMP', 'VR']
+      - name: type_code
+        description: Encounter type code, usually SNOMED. Null on the unknown member.
+      - name: type_display
+        description: Encounter type display text. The unknown member is 'unknown'.
+
+  - name: dim_observation_code
+    description: >
+      Distinct observation codes. One row per code system, LOINC code, display, category,
+      and unit, plus an unknown member (observation_code_key '-1'). The same LOINC code
+      can appear more than once when category or unit differs.
+    columns:
+      - name: observation_code_key
+        description: MD5 surrogate of code system, LOINC code, display, category, and unit. The unknown member is '-1'.
+        tests:
+          - unique
+          - not_null
+      - name: code_system
+        description: Code system URI, usually LOINC. Null on the unknown member.
+      - name: loinc_code
+        description: Observation code from the value row. Component rows carry the component code. Null on the unknown member.
+      - name: display
+        description: Display text for the code. The unknown member is 'unknown'.
+      - name: category
+        description: Observation category code, such as vital-signs or laboratory. Null on the unknown member.
+      - name: unit
+        description: Unit recorded with this code. Null when the value is text or on the unknown member.
+
+  - name: dim_organization
+    description: >
+      Organization dimension. One row per organization, plus an unknown member
+      (organization_key '-1'). Facts join on identifier_value because encounter
+      references point at that identifier, not the FHIR resource id.
+    columns:
+      - name: organization_key
+        description: MD5 surrogate of identifier_value. The unknown member is '-1'.
+        tests:
+          - unique
+          - not_null
+      - name: organization_id
+        description: FHIR Organization resource id. Null on the unknown member.
+      - name: identifier_value
+        description: Synthea organization identifier used as the business key from encounters. Null on the unknown member.
+      - name: name
+        description: Organization name. The unknown member is 'unknown'.
+      - name: city
+        description: City from the organization address. Null on the unknown member.
+      - name: state
+        description: State from the organization address. Null on the unknown member.
+
+  - name: dim_practitioner
+    description: >
+      Practitioner dimension. One row per practitioner, plus an unknown member
+      (practitioner_key '-1'). Facts join on identifier_value (NPI) because encounter
+      references point at the NPI, not the FHIR resource id.
+    columns:
+      - name: practitioner_key
+        description: MD5 surrogate of identifier_value. The unknown member is '-1'.
+        tests:
+          - unique
+          - not_null
+      - name: practitioner_id
+        description: FHIR Practitioner resource id. Null on the unknown member.
+      - name: identifier_value
+        description: National provider identifier (NPI) used as the business key from encounters. Null on the unknown member.
+      - name: name
+        description: Practitioner display name. The unknown member is 'unknown'.
+      - name: gender
+        description: Administrative gender. Null source values and the unknown member are 'unknown'.
+
+  - name: fact_encounter
+    description: >
+      Grain: one row per encounter. Foreign keys are never null; a missing dimension
+      match uses that dimension's unknown member.
+    columns:
+      - name: encounter_key
+        description: MD5 surrogate of encounter_id. Primary key of this fact.
+        tests:
+          - unique
+          - not_null
+      - name: encounter_id
+        description: FHIR Encounter id. Degenerate dimension for this grain.
+      - name: patient_key
+        description: Foreign key to dim_patient. '-1' when the patient is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_patient')
+              field: patient_key
+      - name: start_date_key
+        description: Foreign key to dim_date for the encounter start date. -1 when start is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: end_date_key
+        description: Foreign key to dim_date for the encounter end date. -1 when end is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: encounter_type_key
+        description: Foreign key to dim_encounter_type. '-1' when class and type are all missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_encounter_type')
+              field: encounter_type_key
+      - name: organization_key
+        description: Foreign key to dim_organization, matched on the organization identifier. '-1' when unmatched.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_organization')
+              field: organization_key
+      - name: practitioner_key
+        description: Foreign key to dim_practitioner, matched on NPI. '-1' when unmatched.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_practitioner')
+              field: practitioner_key
+      - name: duration_minutes
+        description: Whole minutes from start_ts to end_ts. Null when either timestamp is missing.
+      - name: is_emergency
+        description: True when the encounter class is EMER.
+      - name: is_inpatient
+        description: True when the encounter class is IMP.
+      - name: age_at_encounter
+        description: Completed whole years from birth_date to the encounter start date. Null when either date is missing.
+
+  - name: fact_condition
+    description: >
+      Grain: one row per recorded condition. Foreign keys are never null; a missing
+      dimension or encounter match uses the unknown member '-1' (date keys use -1).
+    columns:
+      - name: condition_key
+        description: MD5 surrogate of condition_id. Primary key of this fact.
+        tests:
+          - unique
+          - not_null
+      - name: condition_id
+        description: FHIR Condition id. Degenerate dimension for this grain.
+      - name: patient_key
+        description: Foreign key to dim_patient. '-1' when the patient is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_patient')
+              field: patient_key
+      - name: encounter_key
+        description: >
+          Foreign key to fact_encounter. '-1' when the condition has no matching encounter.
+          The relationship test ignores '-1' because the unknown member lives on dimensions, not on this fact.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_encounter')
+              field: encounter_key
+              config:
+                where: "encounter_key <> '-1'"
+      - name: condition_code_key
+        description: Foreign key to dim_condition_code. '-1' when system, code, and display are all missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_condition_code')
+              field: condition_code_key
+      - name: onset_date_key
+        description: Foreign key to dim_date for the onset date. -1 when onset is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: abatement_date_key
+        description: Foreign key to dim_date for the abatement date. -1 when the condition is unresolved.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: is_active
+        description: True when clinical_status is active. False otherwise, including a missing status.
+      - name: duration_days
+        description: Whole days from onset to abatement. Null when the condition is unresolved or onset is missing.
+      - name: age_at_onset
+        description: Completed whole years from birth_date to the onset date. Null when either date is missing.
+
+  - name: fact_observation
+    description: >
+      Grain: one row per observation value. Component panels such as blood pressure are
+      already one row per component in staging, and each component is its own fact row.
+      Foreign keys are never null.
+    columns:
+      - name: observation_key
+        description: MD5 surrogate of the staging observation value id. Primary key of this fact.
+        tests:
+          - unique
+          - not_null
+      - name: patient_key
+        description: Foreign key to dim_patient. '-1' when the patient is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_patient')
+              field: patient_key
+      - name: encounter_key
+        description: >
+          Foreign key to fact_encounter. '-1' when the observation has no matching encounter.
+          The relationship test ignores '-1' because the unknown member lives on dimensions, not on this fact.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_encounter')
+              field: encounter_key
+              config:
+                where: "encounter_key <> '-1'"
+      - name: observation_code_key
+        description: Foreign key to dim_observation_code. '-1' when the code attributes are all missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_observation_code')
+              field: observation_code_key
+      - name: date_key
+        description: Foreign key to dim_date for the effective date. -1 when the effective time is missing.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: value_numeric
+        description: Numeric result. Null for text-valued observations such as smoking status.
+      - name: value_text
+        description: Text result, including a valueCodeableConcept display. Null when the result is numeric.
+      - name: unit
+        description: Unit for value_numeric on this row. Also part of the observation code key when present.
+      - name: age_at_observation
+        description: Completed whole years from birth_date to the effective date. Null when either date is missing.

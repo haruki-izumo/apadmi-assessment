@@ -1,0 +1,181 @@
+version: 2
+
+models:
+  - name: stg_patients
+    description: >
+      One row per patient from data/staging/patient.parquet. Strings are trimmed
+      and blank values become null. This view does not apply business rules.
+    columns:
+      - name: patient_id
+        description: FHIR Patient id.
+      - name: gender
+        description: Administrative gender, trimmed. Null when the source value is blank.
+      - name: birth_date
+        description: Date of birth.
+      - name: deceased_datetime
+        description: UTC timestamp of death when the patient is deceased. Null otherwise.
+      - name: city
+        description: City from the first address.
+      - name: state
+        description: State from the first address.
+      - name: postal_code
+        description: Postal code from the first address, kept as text so leading zeros are preserved.
+      - name: marital_status
+        description: Marital status display from the first coding.
+      - name: race
+        description: US Core race, OMB category display.
+      - name: ethnicity
+        description: US Core ethnicity, OMB category display.
+      - name: source_file
+        description: FHIR bundle file this row was extracted from.
+      - name: ingested_at
+        description: UTC timestamp when the extract run wrote this row.
+
+  - name: stg_encounters
+    description: >
+      One row per encounter from data/staging/encounter.parquet. Strings are trimmed
+      and blank values become null. This view does not apply business rules.
+    columns:
+      - name: encounter_id
+        description: FHIR Encounter id.
+      - name: patient_id
+        description: Patient id parsed from Encounter.subject.
+      - name: class_code
+        description: Encounter class code (for example AMB, EMER, IMP, HH, VR).
+      - name: type_system
+        description: Code system of the first encounter type coding.
+      - name: type_code
+        description: Code of the first encounter type coding.
+      - name: type_display
+        description: Display text of the first encounter type coding.
+      - name: start_ts
+        description: Encounter period start, UTC.
+      - name: end_ts
+        description: Encounter period end, UTC.
+      - name: organization_id
+        description: >
+          Organization identifier parsed from Encounter.serviceProvider. This is the
+          Synthea identifier value, not the Organization resource id.
+      - name: practitioner_id
+        description: >
+          Practitioner identifier parsed from the primary performer. This is the NPI,
+          not the Practitioner resource id.
+      - name: reason_code
+        description: Code from the first reasonCode coding.
+      - name: reason_display
+        description: Display text from the first reasonCode coding.
+      - name: source_file
+        description: FHIR bundle file this row was extracted from.
+      - name: ingested_at
+        description: UTC timestamp when the extract run wrote this row.
+
+  - name: stg_conditions
+    description: >
+      One row per condition from data/staging/condition.parquet. Strings are trimmed
+      and blank values become null. This view does not apply business rules.
+    columns:
+      - name: condition_id
+        description: FHIR Condition id.
+      - name: patient_id
+        description: Patient id parsed from Condition.subject.
+      - name: encounter_id
+        description: Encounter id parsed from Condition.encounter.
+      - name: code_system
+        description: Code system of the condition coding.
+      - name: code
+        description: Condition code.
+      - name: display
+        description: Condition display text.
+      - name: clinical_status
+        description: Clinical status code, such as active or resolved.
+      - name: verification_status
+        description: Verification status code, such as confirmed.
+      - name: onset_ts
+        description: Onset timestamp, UTC.
+      - name: abatement_ts
+        description: Abatement timestamp, UTC. Null when the condition is unresolved.
+      - name: recorded_date
+        description: Date the condition was recorded.
+      - name: source_file
+        description: FHIR bundle file this row was extracted from.
+      - name: ingested_at
+        description: UTC timestamp when the extract run wrote this row.
+
+  - name: stg_observations
+    description: >
+      One row per observation value from data/staging/observation.parquet.
+      Blood pressure and other panels are already exploded to one row per component.
+      Strings are trimmed and blank values become null. This view does not apply business rules.
+    columns:
+      - name: observation_id
+        description: >
+          Observation id. Component rows use {parent id}:{component code} so each
+          value has its own id.
+      - name: patient_id
+        description: Patient id parsed from Observation.subject.
+      - name: encounter_id
+        description: Encounter id parsed from Observation.encounter.
+      - name: category
+        description: Observation category code, such as vital-signs or laboratory.
+      - name: code_system
+        description: Code system of this value. Component rows use the component code system.
+      - name: code
+        description: Observation code. Component rows use the component code, not the panel code.
+      - name: display
+        description: Display text for this value's code.
+      - name: effective_ts
+        description: Clinically relevant time of the observation, UTC.
+      - name: value_numeric
+        description: Numeric value from valueQuantity. Null when the value is text.
+      - name: unit
+        description: Unit that accompanies value_numeric.
+      - name: value_text
+        description: Display text from valueCodeableConcept, or valueString when there is no numeric value.
+      - name: parent_observation_id
+        description: Panel observation id when this row came from component[]. Null for a standalone observation.
+      - name: source_file
+        description: FHIR bundle file this row was extracted from.
+      - name: ingested_at
+        description: UTC timestamp when the extract run wrote this row.
+
+  - name: stg_organizations
+    description: >
+      One row per organization from data/staging/organization.parquet. Strings are
+      trimmed and blank values become null. This view does not apply business rules.
+    columns:
+      - name: organization_id
+        description: FHIR Organization resource id.
+      - name: identifier_value
+        description: >
+          Synthea organization identifier. Encounter.serviceProvider references this
+          value, not organization_id.
+      - name: name
+        description: Organization name.
+      - name: city
+        description: City from the first address.
+      - name: state
+        description: State from the first address.
+      - name: source_file
+        description: FHIR bundle file this row was extracted from.
+      - name: ingested_at
+        description: UTC timestamp when the extract run wrote this row.
+
+  - name: stg_practitioners
+    description: >
+      One row per practitioner from data/staging/practitioner.parquet. Strings are
+      trimmed and blank values become null. This view does not apply business rules.
+    columns:
+      - name: practitioner_id
+        description: FHIR Practitioner resource id.
+      - name: identifier_value
+        description: >
+          National provider identifier (NPI). Encounter participants reference this
+          value, not practitioner_id.
+      - name: name
+        description: Prefix, given names, and family name joined into one string.
+      - name: gender
+        description: Administrative gender, trimmed.
+      - name: source_file
+        description: FHIR bundle file this row was extracted from.
+      - name: ingested_at
+        description: UTC timestamp when the extract run wrote this row.
