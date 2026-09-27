@@ -1,4 +1,4 @@
-# FHIR medallion pipeline — stub targets (logic added later)
+# Local pipeline. Docker runs the same steps via scripts/docker_entrypoint.sh.
 .PHONY: download extract transform test docs app all clean
 
 PYTHON ?= python
@@ -25,7 +25,7 @@ app:
 	$(STREAMLIT) run app/streamlit_app.py
 
 all: download extract transform test
-	@echo "Pipeline complete (stubs)."
+	@echo "Pipeline complete. Start the dashboard with: make app"
 
 clean:
 	@echo "Removing staging parquet and DuckDB warehouse..."

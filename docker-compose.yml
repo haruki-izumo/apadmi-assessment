@@ -1,1 +1,8 @@
-# Placeholder docker-compose.
+services:
+  pipeline:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./warehouse:/app/warehouse
